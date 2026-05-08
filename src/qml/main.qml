@@ -24,6 +24,8 @@ ApplicationWindow {
     property string searchText: ""
     property real iconScale: 1.0
     property var contextFile: ({})
+    property var clipboardPaths: []
+    property string clipboardMode: ""
     property int visibleCount: visibleModel.count
     readonly property bool darkMode: Theme.colors.isDark
 
@@ -124,6 +126,90 @@ ApplicationWindow {
         fileContextMenu.popup()
     }
 
+    function openFolderContextMenu(mouse) {
+        contextFile = ({})
+        selectedPaths = []
+        fileContextMenu.popup()
+    }
+
+    function fileNameFromPath(path) {
+        const slash = path.lastIndexOf("/")
+        return slash >= 0 ? path.slice(slash + 1) : path
+    }
+
+    function clipboardSourcePaths() {
+        if (selectedPaths.length) {
+            return selectedPaths.slice()
+        }
+        if (contextFile.path) {
+            return [contextFile.path]
+        }
+        return []
+    }
+
+    function hasClipboardSource() {
+        return selectedPaths.length > 0 || !!contextFile.path
+    }
+
+    function copySelected() {
+        const paths = clipboardSourcePaths()
+        if (!paths.length) {
+            return
+        }
+        clipboardPaths = paths
+        clipboardMode = "copy"
+        fileOps.copyToClipboard(paths, false)
+    }
+
+    function cutSelected() {
+        const paths = clipboardSourcePaths()
+        if (!paths.length) {
+            return
+        }
+        clipboardPaths = paths
+        clipboardMode = "cut"
+        fileOps.copyToClipboard(paths, true)
+    }
+
+    function pasteClipboard() {
+        const systemPaths = fileOps.clipboardFilePaths()
+        const pathsToPaste = systemPaths.length ? systemPaths : clipboardPaths
+        const modeToPaste = systemPaths.length ? fileOps.clipboardMode() : clipboardMode
+        if (!pathsToPaste.length || !modeToPaste) {
+            return
+        }
+
+        let pastedPaths = []
+        let completed = true
+        for (let i = 0; i < pathsToPaste.length; i++) {
+            const sourcePath = pathsToPaste[i]
+            const targetPath = fileOps.uniquePath(currentPath, fileNameFromPath(sourcePath))
+            if (!targetPath) {
+                completed = false
+                continue
+            }
+
+            const didPaste = modeToPaste === "cut"
+                ? fileOps.moveItem(sourcePath, targetPath)
+                : fileOps.copyItem(sourcePath, targetPath)
+            completed = completed && didPaste
+            if (didPaste) {
+                pastedPaths.push(targetPath)
+            }
+        }
+
+        if (modeToPaste === "cut" && completed) {
+            clipboardPaths = []
+            clipboardMode = ""
+        }
+        selectedPaths = pastedPaths
+        reloadCurrentFolder()
+    }
+
+    function hasPasteSource() {
+        return !!currentPath && (clipboardPaths.length > 0 || fileOps.hasClipboardFiles())
+    }
+
     function copyPathToClipboard(path) {
         clipboardHelper.text = path
         clipboardHelper.selectAll()
@@ -160,27 +246,144 @@ ApplicationWindow {
 
     onSearchTextChanged: refreshVisibleModel()
 
+    component StyledMenuItem: MenuItem {
+        id: menuItem
+        property string iconText: ""
+        property string shortcutText: ""
+
+        implicitWidth: 236
+        implicitHeight: 36
+        opacity: enabled ? 1.0 : 0.46
+
+        contentItem: RowLayout {
+            anchors.fill: parent
+            anchors.leftMargin: 12
+            anchors.rightMargin: 12
+            spacing: 10
+
+            Rectangle {
+                Layout.preferredWidth: 22
+                Layout.preferredHeight: 22
+                radius: 7
+                color: menuItem.highlighted && menuItem.enabled ? Theme.colors.accentSoft : Theme.colors.control
+                border.width: 1
+                border.color: Theme.colors.hairline
+
+                Text {
+                    anchors.centerIn: parent
+                    text: menuItem.iconText
+                    color: menuItem.highlighted && menuItem.enabled ? Theme.colors.accent : Theme.colors.textMuted
+                    font.pixelSize: 11
+                    font.weight: Font.DemiBold
+                }
+            }
+
+            Text {
+                Layout.fillWidth: true
+                text: menuItem.text
+                color: Theme.colors.textPrimary
+                font.pixelSize: 13
+                font.weight: menuItem.highlighted && menuItem.enabled ? Font.DemiBold : Font.Normal
+                elide: Text.ElideRight
+                verticalAlignment: Text.AlignVCenter
+            }
+
+            Text {
+                visible: menuItem.shortcutText.length > 0
+                text: menuItem.shortcutText
+                color: Theme.colors.textFaint
+                font.pixelSize: 11
+                verticalAlignment: Text.AlignVCenter
+            }
+        }
+
+        background: Rectangle {
+            x: 6
+            y: 2
+            width: parent.width - 12
+            height: parent.height - 4
+            radius: 9
+            color: menuItem.highlighted && menuItem.enabled ? Theme.colors.controlHover : "transparent"
+        }
+    }
+
+    component StyledMenuSeparator: MenuSeparator {
+        topPadding: 5
+        bottomPadding: 5
+        contentItem: Rectangle {
+            implicitHeight: 1
+            implicitWidth: 1
+            color: Theme.colors.divider
+        }
+    }
+
     Menu {
         id: fileContextMenu
+        width: 236
 
-        MenuItem {
+        margins: 8
+        padding: 8
+
+        background: Rectangle {
+            implicitWidth: 236
+            radius: 14
+            color: Theme.colors.previewSurface
+            border.width: 1
+            border.color: Theme.colors.hairline
+
+            layer.enabled: true
+            layer.effect: MultiEffect {
+                shadowEnabled: true
+                shadowBlur: 0.54
+                shadowOpacity: root.darkMode ? 0.38 : 0.16
+                shadowVerticalOffset: 12
+            }
+        }
+
+        StyledMenuItem {
             text: "Open"
+            iconText: "O"
             enabled: !!root.contextFile.path
             onTriggered: root.activate(root.contextFile.path, root.contextFile.isDir)
         }
-        MenuItem {
+        StyledMenuItem {
             text: "Open with Default App"
+            iconText: "A"
             enabled: !!root.contextFile.path && !root.contextFile.isDir
             onTriggered: Qt.openUrlExternally(root.fileUrl(root.contextFile.path))
         }
-        MenuSeparator {}
-        MenuItem {
+        StyledMenuSeparator {}
+        StyledMenuItem {
+            text: "Copy"
+            iconText: "C"
+            shortcutText: "Ctrl+C"
+            enabled: root.hasClipboardSource()
+            onTriggered: root.copySelected()
+        }
+        StyledMenuItem {
+            text: "Paste"
+            iconText: "V"
+            shortcutText: "Ctrl+V"
+            enabled: root.hasPasteSource()
+            onTriggered: root.pasteClipboard()
+        }
+        StyledMenuItem {
+            text: "Cut"
+            iconText: "X"
+            shortcutText: "Ctrl+X"
+            enabled: root.hasClipboardSource()
+            onTriggered: root.cutSelected()
+        }
+        StyledMenuSeparator {}
+        StyledMenuItem {
             text: "Copy Path"
+            iconText: "P"
             enabled: !!root.contextFile.path
             onTriggered: root.copyPathToClipboard(root.contextFile.path)
         }
-        MenuItem {
+        StyledMenuItem {
             text: "Show Parent Folder"
+            iconText: "F"
             enabled: !!root.contextFile.path
             onTriggered: {
                 const slash = root.contextFile.path.lastIndexOf("/")
@@ -189,14 +392,16 @@ ApplicationWindow {
                 }
             }
         }
-        MenuSeparator {}
-        MenuItem {
+        StyledMenuSeparator {}
+        StyledMenuItem {
             text: "Rename"
+            iconText: "R"
             enabled: !!root.contextFile.path
             onTriggered: renamePopup.openFor(root.contextFile)
         }
-        MenuItem {
+        StyledMenuItem {
             text: "Move to Trash"
+            iconText: "D"
             enabled: !!root.contextFile.path
             onTriggered: {
                 if (fileOps.moveToTrash(root.contextFile.path)) {
@@ -205,14 +410,16 @@ ApplicationWindow {
                 }
             }
         }
-        MenuItem {
+        StyledMenuItem {
             text: "New Folder Here"
+            iconText: "N"
             enabled: !!root.currentPath
             onTriggered: newFolderPopup.open()
         }
-        MenuSeparator {}
-        MenuItem {
+        StyledMenuSeparator {}
+        StyledMenuItem {
             text: "Get Info"
+            iconText: "I"
             enabled: !!root.contextFile.path
             onTriggered: infoPopup.openFor(root.contextFile)
         }
@@ -474,7 +681,6 @@ ApplicationWindow {
                             { label: "Home", icon: "\uf015", path: homePath },
                             { label: "System", icon: "\uf0a0", path: "/" },
                             { label: "Mounted Drives", icon: "\uf1c0", path: "/run/media/" + userName },
-                            { label: "Network", icon: "\uf6ff", path: "network:///" },
                             { label: "Trash", icon: "\uf1f8", path: homePath + "/.local/share/Trash/files" }
                         ]
                     }
@@ -772,10 +978,54 @@ ApplicationWindow {
                             value: root.iconScale
                             visible: root.viewMode !== "list"
                             onValueChanged: root.iconScale = value
+                            }
+                        }
+                    }
+
+                    ColumnLayout {
+                        anchors.centerIn: parent
+                        width: Math.min(parent.width - 80, 420)
+                        spacing: 10
+                        visible: visibleModel.count === 0
+                        z: 5
+
+                        Rectangle {
+                            Layout.alignment: Qt.AlignHCenter
+                            Layout.preferredWidth: 62
+                            Layout.preferredHeight: 56
+                            radius: 16
+                            color: Theme.colors.control
+                            border.width: 1
+                            border.color: Theme.colors.hairline
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: root.searchText.length ? "\uf002" : "\uf07b"
+                                color: Theme.colors.textMuted
+                                font.family: Theme.typography.icon
+                                font.pixelSize: 24
+                            }
+                        }
+
+                        Text {
+                            Layout.fillWidth: true
+                            text: root.searchText.length ? "No matching files" : "This folder is empty"
+                            color: Theme.colors.textPrimary
+                            font.pixelSize: 17
+                            font.weight: Font.DemiBold
+                            horizontalAlignment: Text.AlignHCenter
+                        }
+
+                        Text {
+                            Layout.fillWidth: true
+                            text: root.searchText.length ? "Try a different search in this folder." : root.displayPath(root.currentPath)
+                            color: Theme.colors.textMuted
+                            font.pixelSize: 12
+                            horizontalAlignment: Text.AlignHCenter
+                            elide: Text.ElideMiddle
                         }
                     }
                 }
-            }
         }
     }
 
@@ -1310,9 +1560,16 @@ ApplicationWindow {
         return dot >= 0 ? name.slice(dot + 1).toLowerCase() : ""
     }
 
+    function isDotFile(name) {
+        return name.length > 1 && name.charAt(0) === "."
+    }
+
     function fileIcon(name, isDir) {
         if (isDir) return "\uf07b"
         const ext = extension(name)
+        if (isDotFile(name)) return "\uf023"
+        if (["desktop", "appimage", "app", "bin", "exe"].indexOf(ext) >= 0) return "\uf135"
+        if (["ppt", "pptx", "pps", "ppsx", "odp", "key"].indexOf(ext) >= 0) return "\uf1c4"
         if (isImageFile(name)) return "\uf1c5"
         if (["mp4", "mkv", "webm", "mov", "avi"].indexOf(ext) >= 0) return "\uf1c8"
         if (["mp3", "flac", "wav", "ogg", "m4a"].indexOf(ext) >= 0) return "\uf1c7"
@@ -1320,7 +1577,6 @@ ApplicationWindow {
         if (["md", "txt", "rst"].indexOf(ext) >= 0) return "\uf15c"
         if (["rs", "cpp", "c", "h", "hpp", "qml", "js", "ts", "py", "go", "lua", "sh", "json", "toml", "yaml", "yml"].indexOf(ext) >= 0) return "\uf1c9"
         if (["zip", "tar", "gz", "xz", "7z", "rar"].indexOf(ext) >= 0) return "\uf1c6"
-        if (["desktop", "appimage"].indexOf(ext) >= 0) return "\uf135"
         return "\uf15b"
     }
 
@@ -1331,6 +1587,9 @@ ApplicationWindow {
 
     function fileBadge(name) {
         const ext = extension(name)
+        if (isDotFile(name)) return "HID"
+        if (["desktop", "appimage", "app", "bin", "exe"].indexOf(ext) >= 0) return "APP"
+        if (["ppt", "pptx", "pps", "ppsx", "odp", "key"].indexOf(ext) >= 0) return "PPT"
         if (!ext) return "FILE"
         if (ext.length > 4) return ext.slice(0, 4).toUpperCase()
         return ext.toUpperCase()
@@ -1339,6 +1598,9 @@ ApplicationWindow {
     function iconBackColor(name, isDir) {
         if (isDir) return Theme.colors.folderBack
         const ext = extension(name)
+        if (isDotFile(name)) return Theme.colors.typeHidden
+        if (["desktop", "appimage", "app", "bin", "exe"].indexOf(ext) >= 0) return Theme.colors.typeApplication
+        if (["ppt", "pptx", "pps", "ppsx", "odp", "key"].indexOf(ext) >= 0) return Theme.colors.typePresentation
         if (["png", "jpg", "jpeg", "webp", "gif", "svg", "heic"].indexOf(ext) >= 0) return Theme.colors.typeImage
         if (["mp4", "mkv", "webm", "mov", "avi"].indexOf(ext) >= 0) return Theme.colors.typeVideo
         if (["mp3", "flac", "wav", "ogg", "m4a"].indexOf(ext) >= 0) return Theme.colors.typeAudio
@@ -1368,6 +1630,9 @@ ApplicationWindow {
     Shortcut { sequence: "Ctrl+1"; onActivated: root.viewMode = "grid" }
     Shortcut { sequence: "Ctrl+2"; onActivated: root.viewMode = "list" }
     Shortcut { sequence: "Ctrl+3"; onActivated: root.viewMode = "preview" }
+    Shortcut { sequence: "Ctrl+C"; onActivated: root.copySelected() }
+    Shortcut { sequence: "Ctrl+V"; onActivated: root.pasteClipboard() }
+    Shortcut { sequence: "Ctrl+X"; onActivated: root.cutSelected() }
     Shortcut { sequence: "Escape"; onActivated: root.selectedPaths = [] }
     Shortcut { sequence: "Return"; onActivated: if (root.selectedPaths.length) root.activate(root.selectedPaths[0], false) }
 }
