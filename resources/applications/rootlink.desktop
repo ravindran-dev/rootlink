@@ -2,12 +2,13 @@
 Type=Application
 Version=1.0
 Name=Rootlink
-GenericName=File Manager
-Comment=Finder-style native Wayland file manager
-Exec=rootlink %U
+GenericName=File Browser
+Comment=Browse and manage files with Rootlink
+Exec=rootlink %f
 Icon=rootlink
 Terminal=false
 Categories=System;FileTools;FileManager;Qt;
 MimeType=inode/directory;
 StartupNotify=true
-Keywords=files;folders;finder;wayland;sway;
+StartupWMClass=rootlink
+Keywords=file;files;folder;folders;directory;browser;manager;finder;wayland;sway;

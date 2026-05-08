@@ -28,6 +28,7 @@ ApplicationWindow {
     property string clipboardMode: ""
     property int visibleCount: visibleModel.count
     readonly property bool darkMode: Theme.colors.isDark
+    readonly property int fileGridMargin: Math.max(18, Math.min(34, Math.round(width * 0.018)))
 
     function fileUrl(path) {
         return "file://" + path
@@ -116,6 +117,12 @@ ApplicationWindow {
                 modified: folderModel.get(i, "fileModified")
             })
         }
+    }
+
+    function fittedGridCellWidth(availableWidth, targetWidth) {
+        const usableWidth = Math.max(1, availableWidth)
+        const columns = Math.max(1, Math.floor(usableWidth / targetWidth))
+        return Math.floor(usableWidth / columns)
     }
 
     function openContextMenu(file, mouse) {
@@ -825,14 +832,15 @@ ApplicationWindow {
                     GridView {
                         id: gridView
                         anchors.fill: parent
-                        anchors.leftMargin: 28
-                        anchors.rightMargin: 28
+                        anchors.leftMargin: root.fileGridMargin
+                        anchors.rightMargin: root.fileGridMargin
                         anchors.topMargin: root.searchText.length ? 72 : 28
                         anchors.bottomMargin: 28
                         visible: root.viewMode === "grid"
                         clip: true
                         model: visibleModel
-                        cellWidth: 132 * root.iconScale
+                        property real targetCellWidth: 132 * root.iconScale
+                        cellWidth: root.fittedGridCellWidth(width, targetCellWidth)
                         cellHeight: 142 * root.iconScale
 
                         add: Transition {
@@ -840,8 +848,8 @@ ApplicationWindow {
                         }
 
                         delegate: FileTile {
-                            width: gridView.cellWidth - 10
-                            height: gridView.cellHeight - 10
+                            width: gridView.cellWidth
+                            height: gridView.cellHeight
                             name: model.name
                             path: model.path
                             isDir: model.isDir
@@ -858,19 +866,20 @@ ApplicationWindow {
                     GridView {
                         id: previewGridView
                         anchors.fill: parent
-                        anchors.leftMargin: 28
-                        anchors.rightMargin: 28
+                        anchors.leftMargin: root.fileGridMargin
+                        anchors.rightMargin: root.fileGridMargin
                         anchors.topMargin: root.searchText.length ? 72 : 28
                         anchors.bottomMargin: 28
                         visible: root.viewMode === "preview"
                         clip: true
                         model: visibleModel
-                        cellWidth: 160 * root.iconScale
+                        property real targetCellWidth: 160 * root.iconScale
+                        cellWidth: root.fittedGridCellWidth(width, targetCellWidth)
                         cellHeight: 170 * root.iconScale
 
                         delegate: FileTile {
-                            width: previewGridView.cellWidth - 10
-                            height: previewGridView.cellHeight - 10
+                            width: previewGridView.cellWidth
+                            height: previewGridView.cellHeight
                             name: model.name
                             path: model.path
                             isDir: model.isDir

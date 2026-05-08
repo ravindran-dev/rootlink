@@ -11,7 +11,7 @@ cmake --install "${ROOT_DIR}/build" --prefix "${PREFIX}"
 
 DESKTOP_FILE="${PREFIX}/share/applications/rootlink.desktop"
 if [ -f "${DESKTOP_FILE}" ]; then
-    sed -i "s|^Exec=.*|Exec=${PREFIX}/bin/rootlink %U|" "${DESKTOP_FILE}"
+    sed -i "s|^Exec=.*|Exec=${PREFIX}/bin/rootlink %f|" "${DESKTOP_FILE}"
 fi
 
 if command -v update-desktop-database >/dev/null 2>&1; then
