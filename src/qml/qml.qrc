@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RCC>
+    <qresource prefix="/">
+        <file alias="qml/main.qml">main.qml</file>
+        <file alias="qml/pages/FileBrowser.qml">pages/FileBrowser.qml</file>
+        <file alias="qml/pages/Preferences.qml">pages/Preferences.qml</file>
+        <file alias="qml/pages/QuickLook.qml">pages/QuickLook.qml</file>
+        
+        <file alias="qml/components/qmldir">components/qmldir</file>
+        <file alias="qml/components/Sidebar.qml">components/Sidebar.qml</file>
+        <file alias="qml/components/Toolbar.qml">components/Toolbar.qml</file>
+        <file alias="qml/components/FileGrid.qml">components/FileGrid.qml</file>
+        <file alias="qml/components/FileListView.qml">components/FileListView.qml</file>
+        <file alias="qml/components/ColumnView.qml">components/ColumnView.qml</file>
+        <file alias="qml/components/ContextMenu.qml">components/ContextMenu.qml</file>
+        <file alias="qml/components/PathBar.qml">components/PathBar.qml</file>
+        <file alias="qml/components/SearchBar.qml">components/SearchBar.qml</file>
+        <file alias="qml/components/StatusBar.qml">components/StatusBar.qml</file>
+        <file alias="qml/components/TabBar.qml">components/TabBar.qml</file>
+        <file alias="qml/components/PreviewPanel.qml">components/PreviewPanel.qml</file>
+        <file alias="qml/components/PreferenceTabButton.qml">components/PreferenceTabButton.qml</file>
+        <file alias="qml/components/SidebarItem.qml">components/SidebarItem.qml</file>
+        
+        <file alias="qml/theme/qmldir">theme/qmldir</file>
+        <file alias="qml/theme/Colors.qml">theme/Colors.qml</file>
+        <file alias="qml/theme/Typography.qml">theme/Typography.qml</file>
+        <file alias="qml/theme/Spacing.qml">theme/Spacing.qml</file>
+        <file alias="qml/theme/Theme.qml">theme/Theme.qml</file>
+        
+        <file alias="icons/rootlink.svg">../../resources/icons/rootlink.svg</file>
+    </qresource>
+</RCC>

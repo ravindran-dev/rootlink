@@ -1,0 +1,13 @@
+ColumnView 1.0 ColumnView.qml
+ContextMenu 1.0 ContextMenu.qml
+FileGrid 1.0 FileGrid.qml
+FileListView 1.0 FileListView.qml
+PathBar 1.0 PathBar.qml
+PreferenceTabButton 1.0 PreferenceTabButton.qml
+PreviewPanel 1.0 PreviewPanel.qml
+SearchBar 1.0 SearchBar.qml
+Sidebar 1.0 Sidebar.qml
+SidebarItem 1.0 SidebarItem.qml
+StatusBar 1.0 StatusBar.qml
+TabBar 1.0 TabBar.qml
+Toolbar 1.0 Toolbar.qml

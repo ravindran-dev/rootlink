@@ -1,0 +1,44 @@
+# Build artifacts
+/build/
+/target/
+*.o
+*.a
+*.so
+*.dylib
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# CMake
+CMakeUserPresets.json
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Rust
+Cargo.lock
+**/*.rs.bk
+.cargo/
+
+# OS
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+*.exe
+
+# Dependencies
+/vendor/
+node_modules/
+
+# Qt
+*.moc
+*.autogen/
+
+# Temporary files
+*.tmp
+*.log

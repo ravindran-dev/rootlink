@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Rootlink
+GenericName=File Manager
+Comment=Finder-style native Wayland file manager
+Exec=rootlink %U
+Icon=rootlink
+Terminal=false
+Categories=System;FileTools;FileManager;Qt;
+MimeType=inode/directory;
+StartupNotify=true
+Keywords=files;folders;finder;wayland;sway;
